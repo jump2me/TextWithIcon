@@ -1,0 +1,17 @@
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Assembly-CSharp.dll.mdb
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Assembly-CSharp.dll
+/Users/lazymind/TextWithIcon/obj/Debug/Assembly-CSharp.dll
+/Users/lazymind/TextWithIcon/obj/Debug/Assembly-CSharp.dll.mdb
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/UnityEngine.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/UnityEditor.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/UnityEngine.UI.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/UnityEngine.Networking.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Mono.Cecil.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Unity.SerializationLogic.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Unity.DataContract.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/ICSharpCode.NRefactory.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Unity.UNetWeaver.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Unity.UNetWeaver.dll.mdb
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Unity.CecilTools.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Mono.Cecil.Pdb.dll
+/Users/lazymind/TextWithIcon/Temp/bin/Debug/Mono.Cecil.Mdb.dll
