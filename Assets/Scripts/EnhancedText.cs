@@ -1,12 +1,17 @@
 ﻿using System;
+using System.Xml;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-public class TextWithIcon : Text 
+public class EnhancedText : Text
 {	
+	public Vector2 scale = Vector2.one;
+	public Vector2 offset = Vector2.zero;
+
 	public List<GameObject> Prefabs { get; private set; }
 	public List<Sprite> Sprites { get; private set; }
 
@@ -46,9 +51,12 @@ public class TextWithIcon : Text
 	protected override void OnPopulateMesh (VertexHelper toFill)
 	{
 		base.OnPopulateMesh (toFill);
+
+		// get characters uivertex list without gameObjects' spaces.
 		var uivertexList = new List<UIVertex> ();
 		toFill.GetUIVertexStream (uivertexList);
 
+		// extra spaces for gameObjects will be added.
 		var modified = new List<UIVertex> ();
 		GameObject prefab;
 
@@ -181,8 +189,8 @@ public class TextWithIcon : Text
 			icon.transform.SetParent (transform);
 
 			var vertexPosition = pair.Value.position;
-			var posX = vertexPosition.x + rect.width * scale * 0.5f + space;
-			var posY = (lineInfo.topY - lineInfo.height * 0.5f) * m_scaleFactorByScreenMode.y;
+			var posX = vertexPosition.x + rect.width * scale * 0.5f + space + offset.x;
+			var posY = (lineInfo.topY - lineInfo.height * 0.5f) * m_scaleFactorByScreenMode.y + offset.y;
 
 			icon.transform.localPosition = new Vector3(posX, posY);
 			icon.transform.localScale = new Vector3 (scale, scale, scale);
