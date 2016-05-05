@@ -13,7 +13,10 @@ public class Testing : MonoBehaviour {
 		var stamina = MakeIcon ("stamina");
 		textWithIcon.Prefabs.Add (stamina);
 
-		textWithIcon.Text = "You need #star# 6\n You don't have enough #stamina# #star# #star#";
+		var heart = MakeIcon ("heart");
+		textWithIcon.Prefabs.Add (heart);
+
+		textWithIcon.Text = "최대 #star#6까지 진화 가능합니다.\n최대 #heart#이 +300 올랐습니다.\n#stamina#가 부족해 입장할 수 없습니다.";
 	}
 
 	GameObject MakeIcon(string spriteName)

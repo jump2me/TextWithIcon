@@ -7,18 +7,40 @@ using System.Linq;
 
 public class TextWithIcon : Text 
 {	
-	private const float VERT_COUNT_CHAR = 6f;
+	public List<GameObject> Prefabs { get; private set; }
+	public List<Sprite> Sprites { get; private set; }
+
+	private const int VERT_COUNT_CHAR = 6;
+	private const float MARGIN_PIXEL = 3f;
 
 	private Dictionary<float, GameObject> m_GameObjectByCharIndex = new Dictionary<float, GameObject> ();
 	private Dictionary<int, UIVertex> m_UIVertexByIndex = new Dictionary<int, UIVertex>();
 
-	public List<GameObject> Prefabs { get; private set; }
+	private Vector2 m_scaleFactorByScreenMode = Vector2.one;
 
 	protected override void Awake ()
 	{
 		base.Awake ();
 
 		Prefabs = new List<GameObject> ();
+		Sprites = new List<Sprite> ();
+
+		var canvasScaler = GameObject.FindObjectOfType<CanvasScaler> ();
+
+		var x = 1f;
+		var y = 1f;
+		switch (canvasScaler.uiScaleMode) {
+		case CanvasScaler.ScaleMode.ScaleWithScreenSize:
+			var referenceWidth = canvasScaler.referenceResolution.x;
+			var referenceHeight = canvasScaler.referenceResolution.y;
+			var currentWidth = (float)Screen.width;
+			var currentHeight = (float)Screen.height;
+			x = referenceWidth / currentWidth;
+			y = referenceHeight / currentHeight;
+			break;
+		}
+
+		m_scaleFactorByScreenMode = new Vector2 (x, y);
 	}
 
 	protected override void OnPopulateMesh (VertexHelper toFill)
@@ -28,29 +50,30 @@ public class TextWithIcon : Text
 		toFill.GetUIVertexStream (uivertexList);
 
 		var modified = new List<UIVertex> ();
-		GameObject go;
+		GameObject prefab;
+
 		var space = 0f;
-		var lastLine = 0;
+		var lastNumOfLine = 0;
 		var lineInfos = cachedTextGenerator.lines;
 
 		for (int i = 0, max = uivertexList.Count; i < max; i++) {
 
 			var vertex = uivertexList [i];
-			var index = i / VERT_COUNT_CHAR;
-			var numLine = GetNumLineFromCharIndex ((int)index);
-			if (lastLine < numLine) {
+			var index = i / (float)VERT_COUNT_CHAR;
+			var numOfLine = GetNumOfLineFromCharIndex ((int)index);
+			if (lastNumOfLine < numOfLine) {
 				space = 0;
-				lastLine = numLine;
+				lastNumOfLine = numOfLine;
 			}
 
-			if(true == m_GameObjectByCharIndex.TryGetValue(index, out go)) {
+			if(true == m_GameObjectByCharIndex.TryGetValue(index, out prefab)) {
 				
 				m_UIVertexByIndex[(int)index] = vertex;
 
-				if (go != null) {
-					var rect = go.GetComponent<RectTransform> ().rect;
-					var scale = cachedTextGenerator.lines[numLine].height / rect.height;
-					space += rect.width * scale;
+				if (prefab != null) {
+					var rect = prefab.GetComponent<RectTransform> ().rect;
+					var scale = lineInfos[numOfLine].height / rect.height * m_scaleFactorByScreenMode.y;
+					space += rect.width * scale + MARGIN_PIXEL;
 				}
 					
 			}
@@ -64,7 +87,7 @@ public class TextWithIcon : Text
 		toFill.AddUIVertexTriangleStream (modified);
 	}
 
-	private int GetNumLineFromCharIndex(int charIndex)
+	private int GetNumOfLineFromCharIndex(int charIndex)
 	{
 		var lines = cachedTextGenerator.lines;
 		for (int i = 0, max = lines.Count; i < max; i++) {
@@ -115,10 +138,10 @@ public class TextWithIcon : Text
 		var charIndex = 0;
 		for (int i = 0, max = tokens.Length; i < max; i++) {
 			var token = tokens [i];
-			var go = Prefabs.Find(e => e.name == token);
+			var prefab = Prefabs.Find(e => e.name == token);
 
-			if (go != null) {
-				m_GameObjectByCharIndex [charIndex] = go;
+			if (prefab != null) {
+				m_GameObjectByCharIndex [charIndex] = prefab;
 			} else {
 				result += token;
 				charIndex += token.Length;
@@ -138,33 +161,32 @@ public class TextWithIcon : Text
 		yield return new WaitForEndOfFrame ();
 
 		var space = 0f;
-		var lastLine = 0;
+		var lastNumOfLine = 0;
 		var lineInfos = cachedTextGenerator.lines;
 		foreach (var pair in m_UIVertexByIndex) {
 
-			var numLine = GetNumLineFromCharIndex (pair.Key);
-			if (lastLine < numLine) {
+			var numOfLine = GetNumOfLineFromCharIndex (pair.Key);
+			if (lastNumOfLine < numOfLine) {
 				space = 0;
-				lastLine = numLine;
+				lastNumOfLine = numOfLine;
 			}
 
-			var lineInfo = lineInfos[numLine];
-
+			var lineInfo = lineInfos[numOfLine];
 			var prefab = m_GameObjectByCharIndex [pair.Key];
 
 			var icon = Instantiate (prefab);
 			var rect = icon.GetComponent<RectTransform>().rect;
-			var scale = lineInfo.height / rect.height;
+			var scale = lineInfo.height / rect.height * m_scaleFactorByScreenMode.y;
 
 			icon.transform.SetParent (transform);
 
-			var vertPosition = pair.Value.position;
-			var posX = vertPosition.x + rect.width * scale * 0.5f + space;
-			var posY = lineInfo.topY - lineInfo.height * 0.5f;
+			var vertexPosition = pair.Value.position;
+			var posX = vertexPosition.x + rect.width * scale * 0.5f + space;
+			var posY = (lineInfo.topY - lineInfo.height * 0.5f) * m_scaleFactorByScreenMode.y;
 
 			icon.transform.localPosition = new Vector3(posX, posY);
-			icon.transform.localScale = new Vector3 (scale, scale);
-			space += rect.width * scale;	
+			icon.transform.localScale = new Vector3 (scale, scale, scale);
+			space += rect.width * scale + MARGIN_PIXEL;	
 		}
 	}
 }

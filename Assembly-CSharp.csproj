@@ -47,7 +47,6 @@
   <ItemGroup>
      <Compile Include="Assets\Scripts\Testing.cs" />
      <Compile Include="Assets\Scripts\TextWithIcon.cs" />
-     <Compile Include="Assets\Scripts\TextWithIconEditor.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
