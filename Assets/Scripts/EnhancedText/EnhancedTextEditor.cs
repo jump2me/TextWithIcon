@@ -5,9 +5,11 @@ using System.Collections;
 [CustomEditor(typeof(EnhancedText))]
 public class EnhancedTextEditor : Editor {
 
-	[Header("Icon Offset")]
-	SerializedProperty scale;
+	SerializedProperty iconAutoFit;
+	SerializedProperty scaleMultiplier;
 	SerializedProperty offset;
+
+	SerializedProperty m_ObjectPool;
 	public override void OnInspectorGUI()
 	{
 		base.OnInspectorGUI ();

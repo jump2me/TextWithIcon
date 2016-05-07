@@ -6,19 +6,25 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 public class EnhancedText : Text
 {	
-	public Vector2 scale = Vector2.one;
+	//SerializedProperties
+	public bool iconAutoFit = false;
+	public Vector2 scaleMultiplier = Vector2.one;
 	public Vector2 offset = Vector2.zero;
 
-	public List<GameObject> Prefabs { get; private set; }
-	public List<Sprite> Sprites { get; private set; }
+	//Icon Objects to use
+	public List<GameObject> Prefabs = new List<GameObject>();
+	public List<Sprite> Sprites = new List<Sprite> ();
 
+	//Fields
 	private const int VERT_COUNT_CHAR = 6;
-	private const float MARGIN_PIXEL = 3f;
 
-	private Dictionary<float, GameObject> m_GameObjectByCharIndex = new Dictionary<float, GameObject> ();
+	private List<GameObject> m_ObjectPool = new List<GameObject>();
+	private List<GameObject> m_using = new List<GameObject> ();
+	private Dictionary<float, GameObject> m_PrefabByCharIndex = new Dictionary<float, GameObject> ();
 	private Dictionary<int, UIVertex> m_UIVertexByIndex = new Dictionary<int, UIVertex>();
 
 	private Vector2 m_scaleFactorByScreenMode = Vector2.one;
@@ -26,9 +32,6 @@ public class EnhancedText : Text
 	protected override void Awake ()
 	{
 		base.Awake ();
-
-		Prefabs = new List<GameObject> ();
-		Sprites = new List<Sprite> ();
 
 		var canvasScaler = GameObject.FindObjectOfType<CanvasScaler> ();
 
@@ -52,12 +55,12 @@ public class EnhancedText : Text
 	{
 		base.OnPopulateMesh (toFill);
 
-		// get characters uivertex list without gameObjects' spaces.
+		m_UIVertexByIndex.Clear ();
+
 		var uivertexList = new List<UIVertex> ();
 		toFill.GetUIVertexStream (uivertexList);
 
-		// extra spaces for gameObjects will be added.
-		var modified = new List<UIVertex> ();
+		var modifiedVertexList = new List<UIVertex> ();
 		GameObject prefab;
 
 		var space = 0f;
@@ -74,25 +77,24 @@ public class EnhancedText : Text
 				lastNumOfLine = numOfLine;
 			}
 
-			if(true == m_GameObjectByCharIndex.TryGetValue(index, out prefab)) {
+			if(true == m_PrefabByCharIndex.TryGetValue(index, out prefab)) {
 				
 				m_UIVertexByIndex[(int)index] = vertex;
 
 				if (prefab != null) {
 					var rect = prefab.GetComponent<RectTransform> ().rect;
-					var scale = lineInfos[numOfLine].height / rect.height * m_scaleFactorByScreenMode.y;
-					space += rect.width * scale + MARGIN_PIXEL;
+					var scale = GetScaleRatio(lineInfos[numOfLine].height, rect.height);
+					space += rect.width * scale;
 				}
-					
 			}
 
 			vertex.position.x += space;
 
-			modified.Add (vertex);
+			modifiedVertexList.Add (vertex);
 		}
-
+			
 		toFill.Clear ();
-		toFill.AddUIVertexTriangleStream (modified);
+		toFill.AddUIVertexTriangleStream (modifiedVertexList);
 	}
 
 	private int GetNumOfLineFromCharIndex(int charIndex)
@@ -118,8 +120,7 @@ public class EnhancedText : Text
 			return text;
 		}
 		set {
-
-			value = ParseText (value);
+			value = ParseText (value + " ");
 
 			WillUpdateText (value);
 		}
@@ -127,36 +128,53 @@ public class EnhancedText : Text
 
 	void WillUpdateText(string value)
 	{
+		text = string.Empty;
 		StartCoroutine (DoUpdateText (value));
 	}
 
 	IEnumerator DoUpdateText(string value)
 	{
-		yield return new WaitForEndOfFrame ();
 		text = value;
+
+		yield return new WaitForEndOfFrame ();
+
 		WillCreateGameObjects ();
 	}
 
 	private string ParseText(string input)
 	{
-		var delimiter = new char[]{ '#' };
-		var tokens = input.Split (delimiter);
+		m_PrefabByCharIndex.Clear ();
+
+		var pattern = @"<icon='(.+?)' />";
+		var matches = Regex.Matches (input, pattern);
+		if (matches.Count == 0)
+			return input;
 
 		var result = string.Empty;
-		var charIndex = 0;
-		for (int i = 0, max = tokens.Length; i < max; i++) {
-			var token = tokens [i];
-			var prefab = Prefabs.Find(e => e.name == token);
+		var lengthOfLastMatch = 0;
 
-			if (prefab != null) {
-				m_GameObjectByCharIndex [charIndex] = prefab;
-			} else {
-				result += token;
-				charIndex += token.Length;
+		foreach (Match match in matches) {
+			
+			var length = match.ToString ().Length;
+
+			for (int i = 0, max = match.Groups.Count; i < max; i++) {
+
+				var group = match.Groups [i];
+				var value = group.Value;
+
+				var prefab = Prefabs.Find (e => e.name == value);
+				if (prefab != null) {
+					
+					result = Regex.Replace (input, pattern, string.Empty);
+
+					m_PrefabByCharIndex [match.Index - lengthOfLastMatch] = prefab;
+
+					lengthOfLastMatch += length;
+				}
 			}
 		}
 
-		return result + " ";
+		return result;
 	}
 
 	private void WillCreateGameObjects()
@@ -166,6 +184,9 @@ public class EnhancedText : Text
 
 	private IEnumerator DoCreateGameObjects()
 	{
+		m_ObjectPool.ForEach (e => e.SetActive (false));
+		m_using.Clear ();
+
 		yield return new WaitForEndOfFrame ();
 
 		var space = 0f;
@@ -180,11 +201,17 @@ public class EnhancedText : Text
 			}
 
 			var lineInfo = lineInfos[numOfLine];
-			var prefab = m_GameObjectByCharIndex [pair.Key];
+			GameObject prefab;
+			if (false == m_PrefabByCharIndex.TryGetValue (pair.Key, out prefab)) {
+				Debug.Log(string.Format("cannot find a prefab with the index of [{0}]", pair.Key));
+				yield break;
+			}
 
-			var icon = Instantiate (prefab);
+			var icon = FetchGameObject(prefab);
+			m_using.Add (icon);
+
 			var rect = icon.GetComponent<RectTransform>().rect;
-			var scale = lineInfo.height / rect.height * m_scaleFactorByScreenMode.y;
+			var scale = GetScaleRatio(lineInfo.height, rect.height);
 
 			icon.transform.SetParent (transform);
 
@@ -193,8 +220,38 @@ public class EnhancedText : Text
 			var posY = (lineInfo.topY - lineInfo.height * 0.5f) * m_scaleFactorByScreenMode.y + offset.y;
 
 			icon.transform.localPosition = new Vector3(posX, posY);
-			icon.transform.localScale = new Vector3 (scale, scale, scale);
-			space += rect.width * scale + MARGIN_PIXEL;	
+			icon.transform.localScale = new Vector3 (scale * scaleMultiplier.x, scale * scaleMultiplier.y, scale);
+			space += rect.width * scale;	
 		}
 	}
+
+	private float GetScaleRatio(float heightOfLine, float heightOfIcon)
+	{
+		if (iconAutoFit == false)
+			return 1f;
+
+		return heightOfLine / heightOfIcon * m_scaleFactorByScreenMode.y;
+	}
+
+	private GameObject FetchGameObject(GameObject prefab)
+	{
+		var go = m_ObjectPool.Find (e => m_using.Contains(e) == false && e.name == prefab.name);
+		if (go == null) {
+			return InstantiateGameObject (prefab);
+		} else if (go.activeInHierarchy == false){
+			go.SetActive (true);
+			return go;
+		}
+
+		return InstantiateGameObject (prefab);
+	}
+
+	private GameObject InstantiateGameObject(GameObject prefab)
+	{
+		var go = Instantiate (prefab);
+		go.name = prefab.name;
+		m_ObjectPool.Add (go);
+		return go;
+	}
+
 }

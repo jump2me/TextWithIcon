@@ -5,8 +5,17 @@ using System.Collections;
 public class Demo : MonoBehaviour {
 
 	public EnhancedText text;
+	public Button testButton;
+
+	private string[] m_Texts = new string[]{ "click to a demo", 
+		"<icon='star' />this is a <icon='star' />.", 
+		"this is a <icon='heart' />.", 
+		"this is a <icon='star' /> and a <icon='heart' />.", 
+		"<icon='RotatingGameObject' /> <icon='RotatingGameObject' /> <icon='RotatingGameObject' /> <icon='RotatingGameObject' />",
+		"this is a <icon='star' /> and \na <icon='heart' /> with multiple lines."};
+
 	void Start () {
-	
+
 		var star = MakeIcon ("Sprites/star");
 		text.Prefabs.Add(star);
 
@@ -15,10 +24,26 @@ public class Demo : MonoBehaviour {
 
 		var heart = MakeIcon ("Sprites/heart");
 		text.Prefabs.Add (heart);
-
 		text.Prefabs.Add (Resources.Load<GameObject>("Prefabs/RotatingGameObject"));
+	}
 
-		text.Text = "최대 #RotatingGameObject#6까지 진화#star# 가능합니다.\n최대 #heart#이 +300 올랐습니다.\n#stamina#가 부족해 입장할 수 없습니다.";
+	void OnEnable()
+	{
+		text.Text = "click to demo.";
+	}
+
+	void Awake()
+	{
+		testButton.onClick.AddListener (Test);
+	}
+
+	int indexer = 0;
+	void Test()
+	{
+		text.Text = m_Texts [indexer++];
+
+		if (indexer == 6)
+			indexer = 0;
 	}
 
 	GameObject MakeIcon(string spriteName)
