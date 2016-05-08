@@ -1,21 +1,30 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System;
+using System.IO;
 
 public class Demo : MonoBehaviour {
+
+	private FileInfo m_SourceFile;
+	private StreamReader m_Reader;
+	private string m_string = " ";
 
 	public EnhancedText text;
 	public Button testButton;
 
-	private string[] m_Texts = new string[]{ "click to a demo", 
-		"<icon='star' />this is a <icon='star' />.", 
-		"this is a <icon='heart' />.", 
-		"this is a <icon='star' /> and a <icon='heart' />.", 
-		"<icon='RotatingGameObject' /> <icon='RotatingGameObject' /> <icon='RotatingGameObject' /> <icon='RotatingGameObject' />",
-		"this is a <icon='star' /> and \na <icon='heart' /> with multiple lines."};
+	void Start () 
+	{
+		m_SourceFile = new FileInfo ("Assets/Resources/test.txt");
+		m_Reader = m_SourceFile.OpenText ();
+		m_string = m_Reader.ReadToEnd ();
 
-	void Start () {
+		text.Text = m_string;
 
+	}
+
+	void OnEnable()
+	{
 		var star = MakeIcon ("Sprites/star");
 		text.Prefabs.Add(star);
 
@@ -25,25 +34,6 @@ public class Demo : MonoBehaviour {
 		var heart = MakeIcon ("Sprites/heart");
 		text.Prefabs.Add (heart);
 		text.Prefabs.Add (Resources.Load<GameObject>("Prefabs/RotatingGameObject"));
-	}
-
-	void OnEnable()
-	{
-		text.Text = "click to demo.";
-	}
-
-	void Awake()
-	{
-		testButton.onClick.AddListener (Test);
-	}
-
-	int indexer = 0;
-	void Test()
-	{
-		text.Text = m_Texts [indexer++];
-
-		if (indexer == 6)
-			indexer = 0;
 	}
 
 	GameObject MakeIcon(string spriteName)

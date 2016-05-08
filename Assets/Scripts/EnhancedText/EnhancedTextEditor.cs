@@ -9,7 +9,6 @@ public class EnhancedTextEditor : Editor {
 	SerializedProperty scaleMultiplier;
 	SerializedProperty offset;
 
-	SerializedProperty m_ObjectPool;
 	public override void OnInspectorGUI()
 	{
 		base.OnInspectorGUI ();

@@ -1,0 +1,2 @@
+You need <icon='star' />1000 to buy <color=#ffba00>the item</color>.
+Are you sure you want to buy <icon='stamina' />100 with <icon='star' />1000?

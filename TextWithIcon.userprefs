@@ -1,9 +1,10 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/Testing.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/Demo.cs">
     <Files>
-      <File FileName="Assets/Scripts/TextWithIcon.cs" Line="60" Column="42" />
-      <File FileName="Assets/Scripts/Testing.cs" Line="11" Column="36" />
+      <File FileName="Assets/Scripts/EnhancedText/EnhancedText.cs" Line="256" Column="2" />
+      <File FileName="Assets/Scripts/EnhancedText/EnhancedTextEditor.cs" Line="11" Column="2" />
+      <File FileName="Assets/Scripts/Demo.cs" Line="18" Column="3" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

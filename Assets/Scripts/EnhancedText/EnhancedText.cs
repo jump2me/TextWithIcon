@@ -1,11 +1,7 @@
-﻿using System;
-using System.Xml;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 public class EnhancedText : Text
@@ -20,14 +16,16 @@ public class EnhancedText : Text
 	public List<Sprite> Sprites = new List<Sprite> ();
 
 	//Fields
+	private Vector2 m_scaleFactorByScreenMode = Vector2.one;
+
 	private const int VERT_COUNT_CHAR = 6;
 
 	private List<GameObject> m_ObjectPool = new List<GameObject>();
 	private List<GameObject> m_using = new List<GameObject> ();
-	private Dictionary<float, GameObject> m_PrefabByCharIndex = new Dictionary<float, GameObject> ();
-	private Dictionary<int, UIVertex> m_UIVertexByIndex = new Dictionary<int, UIVertex>();
 
-	private Vector2 m_scaleFactorByScreenMode = Vector2.one;
+	private Dictionary<float, GameObject> m_PrefabByCharIndex = new Dictionary<float, GameObject> ();
+
+	private Dictionary<int, UIVertex> m_UIVertexByIndex = new Dictionary<int, UIVertex>();
 
 	protected override void Awake ()
 	{
@@ -83,7 +81,7 @@ public class EnhancedText : Text
 
 				if (prefab != null) {
 					var rect = prefab.GetComponent<RectTransform> ().rect;
-					var scale = GetScaleRatio(lineInfos[numOfLine].height, rect.height);
+					var scale = GetScaleFactor(lineInfos[numOfLine].height, rect.height);
 					space += rect.width * scale;
 				}
 			}
@@ -101,6 +99,7 @@ public class EnhancedText : Text
 	{
 		var lines = cachedTextGenerator.lines;
 		for (int i = 0, max = lines.Count; i < max; i++) {
+			
 			var line = lines [i];
 
 			if (i == max - 1 && line.startCharIdx <= charIndex) {
@@ -120,7 +119,7 @@ public class EnhancedText : Text
 			return text;
 		}
 		set {
-			value = ParseText (value + " ");
+			value = ProcessText (value + " ");
 
 			WillUpdateText (value);
 		}
@@ -141,10 +140,8 @@ public class EnhancedText : Text
 		WillCreateGameObjects ();
 	}
 
-	private string ParseText(string input)
+	private string ProcessText(string input)
 	{
-		m_PrefabByCharIndex.Clear ();
-
 		var pattern = @"<icon='(.+?)' />";
 		var matches = Regex.Matches (input, pattern);
 		if (matches.Count == 0)
@@ -154,23 +151,25 @@ public class EnhancedText : Text
 		var lengthOfLastMatch = 0;
 
 		foreach (Match match in matches) {
-			
-			var length = match.ToString ().Length;
+
+			int length = 0;
 
 			for (int i = 0, max = match.Groups.Count; i < max; i++) {
 
 				var group = match.Groups [i];
 				var value = group.Value;
 
+				if (value == string.Empty)
+					continue;
+
+				length = match.ToString().Length;
 				var prefab = Prefabs.Find (e => e.name == value);
-				if (prefab != null) {
-					
-					result = Regex.Replace (input, pattern, string.Empty);
+				if (prefab == null)
+					continue;
 
-					m_PrefabByCharIndex [match.Index - lengthOfLastMatch] = prefab;
-
-					lengthOfLastMatch += length;
-				}
+				result = Regex.Replace (input, pattern, string.Empty);
+				m_PrefabByCharIndex [match.Index - lengthOfLastMatch] = prefab;
+				lengthOfLastMatch += length;
 			}
 		}
 
@@ -192,6 +191,7 @@ public class EnhancedText : Text
 		var space = 0f;
 		var lastNumOfLine = 0;
 		var lineInfos = cachedTextGenerator.lines;
+
 		foreach (var pair in m_UIVertexByIndex) {
 
 			var numOfLine = GetNumOfLineFromCharIndex (pair.Key);
@@ -203,7 +203,6 @@ public class EnhancedText : Text
 			var lineInfo = lineInfos[numOfLine];
 			GameObject prefab;
 			if (false == m_PrefabByCharIndex.TryGetValue (pair.Key, out prefab)) {
-				Debug.Log(string.Format("cannot find a prefab with the index of [{0}]", pair.Key));
 				yield break;
 			}
 
@@ -211,7 +210,7 @@ public class EnhancedText : Text
 			m_using.Add (icon);
 
 			var rect = icon.GetComponent<RectTransform>().rect;
-			var scale = GetScaleRatio(lineInfo.height, rect.height);
+			var scale = GetScaleFactor(lineInfo.height, rect.height);
 
 			icon.transform.SetParent (transform);
 
@@ -225,7 +224,7 @@ public class EnhancedText : Text
 		}
 	}
 
-	private float GetScaleRatio(float heightOfLine, float heightOfIcon)
+	private float GetScaleFactor(float heightOfLine, float heightOfIcon)
 	{
 		if (iconAutoFit == false)
 			return 1f;
@@ -253,5 +252,4 @@ public class EnhancedText : Text
 		m_ObjectPool.Add (go);
 		return go;
 	}
-
 }
